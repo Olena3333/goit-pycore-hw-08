@@ -4,9 +4,9 @@ import pickle
 import os
 
 
-# ---------- Класи полів ----------
 
 class Field:
+
     def __init__(self, value):
         self.value = value
 
@@ -19,6 +19,7 @@ class Name(Field):
 
 
 class Phone(Field):
+
     def __init__(self, value):
         if not (value.isdigit() and len(value) == 10):
             raise ValueError("Phone number must be 10 digits.")
@@ -26,6 +27,7 @@ class Phone(Field):
 
 
 class Birthday(Field):
+
     def __init__(self, value):
         try:
             self.value = datetime.strptime(value, "%d.%m.%Y").date()
@@ -33,48 +35,50 @@ class Birthday(Field):
             raise ValueError("Invalid date format. Use DD.MM.YYYY.")
 
 
-# ---------- Клас Record ----------
+# ---------- КЛАС ЗАПИСУ КОНТАКТУ ----------
 
 class Record:
-    def __init__(self, name):
+
+    def __init__(self, name): #Описує один контакт користувача 
         self.name = Name(name)
         self.phones = []
         self.birthday = None
 
-    def add_phone(self, phone_value):
+    def add_phone(self, phone_value): #Додає новий телефон до контакту
         phone = Phone(phone_value)
         self.phones.append(phone)
 
-    def edit_phone(self, old_value, new_value):
+    def edit_phone(self, old_value, new_value): #Змінює існуючий телефон
         for i, phone in enumerate(self.phones):
             if phone.value == old_value:
                 self.phones[i] = Phone(new_value)
                 return
         raise ValueError(f"Old phone {old_value} not found for {self.name.value}")
 
-    def add_birthday(self, birthday_value):
+    def add_birthday(self, birthday_value): #Додає день народження для контакту
         self.birthday = Birthday(birthday_value)
 
-    def __str__(self):
+    def __str__(self): #Форматує інформацію про контакт y зручний рядок.
         phones_str = "; ".join(p.value for p in self.phones) if self.phones else "No phones"
         birthday_str = self.birthday.value.strftime("%d.%m.%Y") if self.birthday else "N/A"
         return f"{self.name.value}: {phones_str}, Birthday: {birthday_str}"
 
 
-# ---------- Клас AddressBook ----------
 
 class AddressBook(UserDict):
-    def add_record(self, record):
+    #Колекція всіх контактів (словник з іменами як ключами)
+
+    def add_record(self, record): #Додає новий запис (Record) до книги
         self.data[record.name.value] = record
 
-    def find(self, name):
+    def find(self, name): #Повертає запис за іменем або None, якщо не знайдено
         return self.data.get(name)
 
-    def delete(self, name):
+    def delete(self, name): #Видаляє контакт за ім
         if name in self.data:
             del self.data[name]
 
-    def get_upcoming_birthdays(self):
+    def get_upcoming_birthdays(self): #Шукає користувачів y яких день народження припадає на найближчі 7 днів
         today = datetime.today().date()
         next_week = today + timedelta(days=7)
         upcoming = {}
@@ -97,9 +101,10 @@ class AddressBook(UserDict):
         return "\n".join(result)
 
 
-# ---------- Декоратор обробки помилок ----------
+# ---------- ДЕКОРАТОР ДЛЯ ОБРОБКИ ПОМИЛОК ----------
 
 def input_error(func):
+    """Декоратор, який ловить типові помилки користувача."""
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
@@ -112,9 +117,9 @@ def input_error(func):
     return wrapper
 
 
-# ---------- Командні функції ----------
+# ---------- ДОПОМІЖНІ ФУНКЦІЇ ДЛЯ КОМАНД ----------
 
-def parse_input(user_input):
+def parse_input(user_input): #Розбиває введену користувачем команду на ключове слово та аргументи
     parts = user_input.strip().split()
     if not parts:
         return "", []
@@ -124,7 +129,7 @@ def parse_input(user_input):
 
 
 @input_error
-def add_contact(args, book: AddressBook):
+def add_contact(args, book: AddressBook): #Додає новий контакт або телефон до існуючого
     if len(args) < 2:
         return "Command 'add' expects 2 arguments: <name: str> <phone: 10 digits>"
     name, phone = args[0], args[1]
@@ -140,9 +145,9 @@ def add_contact(args, book: AddressBook):
 
 
 @input_error
-def change_contact(args, book: AddressBook):
+def change_contact(args, book: AddressBook): #Змінює старий номер телефону на новий
     if len(args) < 3:
-        return "Command 'change' expects 3 arguments: <name: str> <old_phone: 10 digits> <new_phone: 10 digits>"
+        return "Command 'change' expects 3 arguments: <name> <old_phone> <new_phone>"
     name, old_phone, new_phone = args
     record = book.find(name)
     if not record:
@@ -152,9 +157,9 @@ def change_contact(args, book: AddressBook):
 
 
 @input_error
-def show_phone(args, book: AddressBook):
+def show_phone(args, book: AddressBook): #Показує телефони користувача
     if len(args) < 1:
-        return "Command 'phone' expects 1 argument: <name: str>"
+        return "Command 'phone' expects 1 argument: <name>"
     name = args[0]
     record = book.find(name)
     if not record:
@@ -165,6 +170,7 @@ def show_phone(args, book: AddressBook):
 
 @input_error
 def show_all(args, book: AddressBook):
+    """Виводить усі контакти в адресній книзі."""
     if not book.data:
         return "Address book is empty."
     return "\n".join(str(record) for record in book.data.values())
@@ -172,8 +178,9 @@ def show_all(args, book: AddressBook):
 
 @input_error
 def add_birthday(args, book: AddressBook):
+    """Додає день народження до існуючого контакту."""
     if len(args) < 2:
-        return "Command 'add-birthday' expects 2 arguments: <name: str> <birthday: DD.MM.YYYY>"
+        return "Command 'add-birthday' expects 2 arguments: <name> <birthday: DD.MM.YYYY>"
     name, date_str = args
     record = book.find(name)
     if not record:
@@ -184,41 +191,42 @@ def add_birthday(args, book: AddressBook):
 
 @input_error
 def show_birthday(args, book: AddressBook):
+    """Показує день народження користувача."""
     if len(args) < 1:
-        return "Command 'show-birthday' expects 1 argument: <name: str>"
+        return "Command 'show-birthday' expects 1 argument: <name>"
     name = args[0]
     record = book.find(name)
     if not record:
         return f"Contact '{name}' not found."
     if record.birthday:
         return f"{name}'s birthday: {record.birthday.value.strftime('%d.%m.%Y')}"
-    else:
-        return f"No birthday set for {name}."
+    return f"No birthday set for {name}."
 
 
 @input_error
 def birthdays(args, book: AddressBook):
+    """Показує всі дні народження, які будуть протягом 7 днів."""
     return book.get_upcoming_birthdays()
 
 
-# ---------- Збереження та завантаження даних ----------
+# ---------- ФУНКЦІЇ ЗБЕРЕЖЕННЯ ТА ВІДНОВЛЕННЯ ----------
 
-def save_data(book, filename="addressbook.pkl"):
+def save_data(book, filename="addressbook.pkl"): #Зберігає адресну книгу у файл за допомогою pickle   
     with open(filename, "wb") as f:
         pickle.dump(book, f)
 
 
-def load_data(filename="addressbook.pkl"):
+def load_data(filename="addressbook.pkl"): #Завантажує адресну книгу з файлу, якщо він існує
     if os.path.exists(filename):
         with open(filename, "rb") as f:
             return pickle.load(f)
-    return AddressBook()  # нова адресна книга, якщо файлу нема
+    return AddressBook()
 
 
-# ---------- Основна функція ----------
+
 
 def main():
-    book = load_data()  # відновлення книги при старті
+    book = load_data()  # Відновлення книги при запуску
     print("Welcome to your assistant bot!")
 
     while True:
@@ -226,7 +234,7 @@ def main():
         command, args = parse_input(user_input)
 
         if command in ["close", "exit"]:
-            save_data(book)  # зберігаємо при виході
+            save_data(book)  # Збереження перед виходом
             print("Address book saved. Goodbye!")
             break
 
@@ -242,24 +250,4 @@ def main():
         elif command == "phone":
             print(show_phone(args, book))
 
-        elif command == "all":
-            print(show_all(args, book))
-
-        elif command == "add-birthday":
-            print(add_birthday(args, book))
-
-        elif command == "show-birthday":
-            print(show_birthday(args, book))
-
-        elif command == "birthdays":
-            print(birthdays(args, book))
-
-        elif command == "":
-            continue  # порожня строка
-
-        else:
-            print(f"Unknown command: '{command}'. Try: add, change, phone, all, hello, exit, add-birthday, show-birthday, birthdays ")
-
-
-if __name__ == "__main__":
-    main()
+        elif command == "
